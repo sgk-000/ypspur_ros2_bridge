@@ -1,17 +1,10 @@
 <launch>
   <arg name="robot_model" />
-  <arg name="driver_param_file" default="$(find-pkg-share ypspur_ros_bridge)/config/$(var robot_model)/driver_param.yaml" />
-  <arg name="odom_param_file" default="$(find-pkg-share ypspur_ros_bridge)/config/odom_example_param.yaml" />
+  <arg name="param_file" default="$(find-pkg-share ypspur_ros2_bridge)/config/$(var robot_model)/ypspur_ros2_bridge_param.yaml" />
 
-  <!-- ypspur_ros_bridge_driver -->
-  <node pkg="ypspur_ros_bridge" exec="ypspur_ros_bridge_driver" name="ypspur_ros_bridge_driver" output="screen">
-    <param from="$(var driver_param_file)" />
+  <node pkg="ypspur_ros2_bridge" exec="ypspur_ros2_bridge" name="ypspur_ros2_bridge" output="screen">
+    <param from="$(var param_file)" />
     <remap from="cmd_vel" to="/cmd_vel" />
-  </node>
-
-  <!-- ypspur_ros_bridge_odom_publisher -->
-  <node pkg="ypspur_ros_bridge" exec="ypspur_ros_bridge_odom_publisher" name="ypspur_ros_bridge_odom_publisher" output="screen">
-    <param from="$(var odom_param_file)" />
   </node>
 
 </launch>

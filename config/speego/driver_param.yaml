@@ -1,7 +1,0 @@
-ypspur_ros_bridge_driver:
-  ros__parameters:
-    use_sim_time: True
-    linear_vel_max: 2.0 #[m/s] 4[km/h] ~= 1.1[m/s]
-    linear_acc_max: 4.0 #[m/s]
-    angular_vel_max: 6.28 #[rad/s]
-    angular_acc_max: 12.58 #[rad/s]

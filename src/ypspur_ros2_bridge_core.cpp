@@ -6,6 +6,10 @@ YpspurROS2Bridge::YpspurROS2Bridge()
   if (Spur_init() < 0)
     RCLCPP_ERROR(this->get_logger(), "can't open ypspur");
 
+  left_wheel_joint_ = this->declare_parameter<std::string>("left_wheel_joint", "left_wheel_joint");
+  right_wheel_joint_ = this->declare_parameter<std::string>("right_wheel_joint", "right_wheel_joint");
+  frame_id_ = this->declare_parameter<std::string>("frame_id", "odom");
+  child_frame_id_ = this->declare_parameter<std::string>("child_frame_id", "base_link");
   linear_vel_max_ = this->declare_parameter<double>("linear_vel_max", 1.1);
   angular_vel_max_ = this->declare_parameter<double>("angular_vel_max", M_PI);
   linear_acc_max_ = this->declare_parameter<double>("linear_acc_max", 1.0);
@@ -17,6 +21,10 @@ YpspurROS2Bridge::YpspurROS2Bridge()
   Spur_set_angvel(angular_vel_max_);
   Spur_set_angaccel(angular_acc_max_);
 
+  js_.name.push_back(left_wheel_joint_);
+  js_.name.push_back(right_wheel_joint_);
+  js_.position.resize(2);
+
   double rate = 1.0 / pub_hz_;
   auto timer_control_callback = std::bind(&YpspurROS2Bridge::timerCallback, this);
   auto period_control =
@@ -26,11 +34,6 @@ YpspurROS2Bridge::YpspurROS2Bridge()
       this->get_node_base_interface()->get_context());
   this->get_node_timers_interface()->add_timer(timer_control_, nullptr);
 
-  left_wheel_joint_ = this->declare_parameter<std::string>("left_wheel_joint", "left_wheel_joint");
-  right_wheel_joint_ = this->declare_parameter<std::string>("right_wheel_joint", "right_wheel_joint");
-  frame_id_ = this->declare_parameter<std::string>("frame_id", "odom");
-  child_frame_id_ = this->declare_parameter<std::string>("child_frame_id", "base_link");
-
   cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>("cmd_vel", 1,
                                                                       std::bind(&YpspurROS2Bridge::CmdVelCallback, this, std::placeholders::_1));
   odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::QoS{10});
@@ -39,10 +42,6 @@ YpspurROS2Bridge::YpspurROS2Bridge()
   js_pub_ = this->create_publisher<sensor_msgs::msg::JointState>("joint_states", rclcpp::QoS{10});
   odom_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(
       std::shared_ptr<rclcpp::Node>(this, [](auto) {}));
-
-  js_.name.push_back(left_wheel_joint_);
-  js_.name.push_back(right_wheel_joint_);
-  js_.position.resize(2);
 }
 
 YpspurROS2Bridge::~YpspurROS2Bridge()
