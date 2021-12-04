@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>ypspur_ros_bridge</name>
+  <name>ypspur_ros2_bridge</name>
   <version>1.0.0</version>
-  <description>The ypspur_ros_bridge package</description>
-  <maintainer email="GRoadPG@gmail.com">RyodoTanaka</maintainer>
-  <author>Ryodo Tanaka</author>
+  <description>The ypspur_ros2_bridge package</description>
+  <maintainer email="shigeki.kobayashi619@gmail.com">ShigekiKobayashi</maintainer>
+  <author>Shigeki Kobayashi</author>
   <license>BSD</license>
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>

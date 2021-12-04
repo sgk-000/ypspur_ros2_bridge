@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(ypspur_ros_bridge)
+project(ypspur_ros2_bridge)
 
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)
@@ -33,11 +33,8 @@ link_directories(
   /usr/local/lib
 )
 ## Declare a cpp executable
-ament_auto_add_executable(ypspur_ros_bridge_driver src/ypspur_ros_bridge_driver_node.cpp)
-target_link_libraries(ypspur_ros_bridge_driver ypspur)
-
-ament_auto_add_executable(ypspur_ros_bridge_odom_publisher src/ypspur_ros_bridge_odom_publisher_node.cpp)
-target_link_libraries(ypspur_ros_bridge_odom_publisher ypspur)
+ament_auto_add_executable(ypspur_ros2_bridge src/ypspur_ros2_bridge_node.cpp src/ypspur_ros2_bridge_core.cpp)
+target_link_libraries(ypspur_ros2_bridge ypspur)
 
 ament_auto_package(
   INSTALL_TO_SHARE
