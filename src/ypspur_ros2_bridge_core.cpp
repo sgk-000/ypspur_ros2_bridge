@@ -1,13 +1,16 @@
 #include "ypspur_ros2_bridge/ypspur_ros2_bridge_core.hpp"
 
-YpspurROS2Bridge::YpspurROS2Bridge()
-    : rclcpp::Node("ypspur_ros2_bridge"), tf2_broadcaster_(*this)
+YpspurROS2Bridge::YpspurROS2Bridge() : rclcpp::Node("ypspur_ros2_bridge"), tf2_broadcaster_(*this)
 {
-  if (Spur_init() < 0)
-    RCLCPP_ERROR(this->get_logger(), "can't open ypspur");
+}
 
+void getParams()
+{
+  serial_port_ = this->declare_parameter<std::string>("serial_port_", "serial_port_");
+  param_file_ = this->declare_parameter<std::string>("param_file", "param_file");
   left_wheel_joint_ = this->declare_parameter<std::string>("left_wheel_joint", "left_wheel_joint");
-  right_wheel_joint_ = this->declare_parameter<std::string>("right_wheel_joint", "right_wheel_joint");
+  right_wheel_joint_ =
+    this->declare_parameter<std::string>("right_wheel_joint", "right_wheel_joint");
   frame_id_ = this->declare_parameter<std::string>("frame_id", "odom");
   child_frame_id_ = this->declare_parameter<std::string>("child_frame_id", "base_link");
   linear_vel_max_ = this->declare_parameter<double>("linear_vel_max", 1.1);
@@ -15,6 +18,20 @@ YpspurROS2Bridge::YpspurROS2Bridge()
   linear_acc_max_ = this->declare_parameter<double>("linear_acc_max", 1.0);
   angular_acc_max_ = this->declare_parameter<double>("angular_acc_max", M_PI);
   pub_hz_ = this->declare_parameter<double>("pub_hz_", 25.0);
+}
+
+CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state)
+{
+  auto ret = system(nullptr);
+  if (ret != 0) {
+    auto ret = system(("ypspur-coordinator -p " + param_file_ + "-d" + serial_port_ +
+                       "--verbose --admask 10000000 --enable-get-digital-io")
+                        .c_str());
+  }
+  if (ret == -1 && Spur_init() < 0) {
+    RCLCPP_WARN(this->get_logger(), "Can't open ypspur");
+    return CallbackReturn::FAILURE;
+  }
 
   Spur_set_vel(linear_vel_max_);
   Spur_set_accel(linear_acc_max_);
@@ -28,27 +45,46 @@ YpspurROS2Bridge::YpspurROS2Bridge()
   double rate = 1.0 / pub_hz_;
   auto timer_control_callback = std::bind(&YpspurROS2Bridge::timerCallback, this);
   auto period_control =
-      std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(rate));
+    std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(rate));
   timer_control_ = std::make_shared<rclcpp::GenericTimer<decltype(timer_control_callback)>>(
-      get_clock(), period_control, std::move(timer_control_callback),
-      this->get_node_base_interface()->get_context());
+    get_clock(), period_control, std::move(timer_control_callback),
+    this->get_node_base_interface()->get_context());
   this->get_node_timers_interface()->add_timer(timer_control_, nullptr);
 
-  cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>("cmd_vel", 1,
-                                                                      std::bind(&YpspurROS2Bridge::CmdVelCallback, this, std::placeholders::_1));
+  cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
+    "cmd_vel", 1, std::bind(&YpspurROS2Bridge::CmdVelCallback, this, std::placeholders::_1));
   odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::QoS{10});
   twist_pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>("twist", rclcpp::QoS{10});
   pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("pose", rclcpp::QoS{10});
   js_pub_ = this->create_publisher<sensor_msgs::msg::JointState>("joint_states", rclcpp::QoS{10});
   odom_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(
-      std::shared_ptr<rclcpp::Node>(this, [](auto) {}));
+    std::shared_ptr<rclcpp::Node>(this, [](auto) {}));
+
+  return CallbackReturn::SUCCESS;
 }
 
-YpspurROS2Bridge::~YpspurROS2Bridge()
+CallbackReturn on_cleanup(const rclcpp_lifecycle::State & previous_state)
 {
+  RCLCPP_INFO(get_logger(), "Cleaning up ypspur");
   Spur_stop();
   Spur_free();
-  RCLCPP_INFO(this->get_logger(), "Stop the robot");
+  RCLCPP_INFO(get_logger(), "Completed Cleaning up ypspur");
+  return CallbackReturn::SUCCESS;
+}
+
+CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state)
+{
+  return CallbackReturn::SUCCESS;
+}
+
+CallbackReturn on_shutdown(const rclcpp_lifecycle::State & previous_state)
+{
+  return CallbackReturn::SUCCESS;
+}
+
+CallbackReturn on_activate(const rclcpp_lifecycle::State & previous_state)
+{
+  return CallbackReturn::SUCCESS;
 }
 
 void YpspurROS2Bridge::CmdVelCallback(const geometry_msgs::msg::Twist::ConstSharedPtr cmd_vel)
