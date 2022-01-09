@@ -1,13 +1,15 @@
 #include "ypspur_ros2_bridge/ypspur_ros2_bridge_core.hpp"
 
-YpspurROS2Bridge::YpspurROS2Bridge() : rclcpp::Node("ypspur_ros2_bridge"), tf2_broadcaster_(*this)
+YpspurROS2Bridge::YpspurROS2Bridge()
+: rclcpp_lifecycle::LifecycleNode("ypspur_ros2_bridge"), tf2_broadcaster_(*this)
 {
 }
 
-void getParams()
+void YpspurROS2Bridge::getParams()
 {
   serial_port_ = this->declare_parameter<std::string>("serial_port_", "serial_port_");
   param_file_ = this->declare_parameter<std::string>("param_file", "param_file");
+  spur_args_ = this->declare_parameter<std::string>("spur_args", "spur_args");
   left_wheel_joint_ = this->declare_parameter<std::string>("left_wheel_joint", "left_wheel_joint");
   right_wheel_joint_ =
     this->declare_parameter<std::string>("right_wheel_joint", "right_wheel_joint");
@@ -20,13 +22,12 @@ void getParams()
   pub_hz_ = this->declare_parameter<double>("pub_hz_", 25.0);
 }
 
-CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state)
+CallbackReturn YpspurROS2Bridge::on_configure(const rclcpp_lifecycle::State & previous_state)
 {
   auto ret = system(nullptr);
   if (ret != 0) {
-    auto ret = system(("ypspur-coordinator -p " + param_file_ + "-d" + serial_port_ +
-                       "--verbose --admask 10000000 --enable-get-digital-io")
-                        .c_str());
+    ret =
+      system(("ypspur-coordinator -p " + param_file_ + "-d" + serial_port_ + spur_args_).c_str());
   }
   if (ret == -1 && Spur_init() < 0) {
     RCLCPP_WARN(this->get_logger(), "Can't open ypspur");
@@ -57,34 +58,38 @@ CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state)
   twist_pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>("twist", rclcpp::QoS{10});
   pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("pose", rclcpp::QoS{10});
   js_pub_ = this->create_publisher<sensor_msgs::msg::JointState>("joint_states", rclcpp::QoS{10});
-  odom_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(
-    std::shared_ptr<rclcpp::Node>(this, [](auto) {}));
+  odom_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn on_cleanup(const rclcpp_lifecycle::State & previous_state)
+CallbackReturn YpspurROS2Bridge::on_cleanup(const rclcpp_lifecycle::State & previous_state)
 {
   RCLCPP_INFO(get_logger(), "Cleaning up ypspur");
   Spur_stop();
+  rclcpp::sleep_for(std::chrono::seconds(1));
   Spur_free();
   RCLCPP_INFO(get_logger(), "Completed Cleaning up ypspur");
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state)
+CallbackReturn YpspurROS2Bridge::on_deactivate(const rclcpp_lifecycle::State & previous_state)
 {
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn on_shutdown(const rclcpp_lifecycle::State & previous_state)
+CallbackReturn YpspurROS2Bridge::on_shutdown(const rclcpp_lifecycle::State & previous_state)
 {
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn on_activate(const rclcpp_lifecycle::State & previous_state)
+CallbackReturn YpspurROS2Bridge::on_activate(const rclcpp_lifecycle::State & previous_state)
 {
-  return CallbackReturn::SUCCESS;
+  if (YP_get_error_state() == 0) {
+    return CallbackReturn::SUCCESS;
+  } else {
+    RCLCPP_WARN(get_logger(), "Ypspur got some error states");
+  }
 }
 
 void YpspurROS2Bridge::CmdVelCallback(const geometry_msgs::msg::Twist::ConstSharedPtr cmd_vel)

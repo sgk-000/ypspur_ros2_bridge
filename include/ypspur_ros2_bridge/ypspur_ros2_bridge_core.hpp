@@ -1,4 +1,4 @@
-#include <string.h>
+#include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
 #include "tf2_ros/buffer.h"
@@ -14,6 +14,7 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 
+#include <string.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <ypspur.h>
@@ -22,7 +23,7 @@
 
 using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 
-class YpspurROS2Bridge : public rclcpp::Node
+class YpspurROS2Bridge : public rclcpp_lifecycle::LifecycleNode
 {
 public:
   YpspurROS2Bridge();
@@ -38,10 +39,10 @@ private:
   CallbackReturn on_cleanup(const rclcpp_lifecycle::State & previous_state) override;
   CallbackReturn on_shutdown(const rclcpp_lifecycle::State & previous_state) override;
 
-
 private:
   std::string param_file_;
   std::string serial_port_;
+  std::string spur_args_;
 
   double linear_vel_max_;
   double angular_vel_max_;
