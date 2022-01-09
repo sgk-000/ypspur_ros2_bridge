@@ -41,6 +41,20 @@ def generate_launch_description():
         )
     )
 
+    # When the ypspur ros2 bridge node reaches the 'unconfigured' state, transite to inactivate.
+    unconfigured_state_handler = launch.actions.RegisterEventHandler(
+        launch_ros.event_handlers.OnStateTransition(
+            target_lifecycle_node=ypspur_ros2_bridge_node,
+            goal_state="unconfigured",
+            entities=[
+                launch.actions.LogInfo(
+                    msg="node 'ypspur_ros2_bridge' reached the 'unconfigured' state, 'inactivating'."
+                ),
+                configure_trans_event,
+            ],
+        )
+    )
+
     inactive_state_handler = launch.actions.RegisterEventHandler(
         launch_ros.event_handlers.OnStateTransition(
             target_lifecycle_node=ypspur_ros2_bridge_node,
@@ -54,7 +68,6 @@ def generate_launch_description():
         )
     )
 
-    # When the talker node reaches the 'active' state, log a message and start the listener node.
     active_state_handler = launch.actions.RegisterEventHandler(
         launch_ros.event_handlers.OnStateTransition(
             target_lifecycle_node=ypspur_ros2_bridge_node,
@@ -71,6 +84,7 @@ def generate_launch_description():
     # The order they are added reflects the order in which they will be executed.
     ld.add_action(inactive_state_handler)
     ld.add_action(active_state_handler)
+    ld.add_action(unconfigured_state_handler)
     ld.add_action(ypspur_ros2_bridge_node)
     ld.add_action(configure_trans_event)
 

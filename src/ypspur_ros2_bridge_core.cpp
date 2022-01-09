@@ -29,7 +29,7 @@ CallbackReturn YpspurROS2Bridge::on_configure(const rclcpp_lifecycle::State & pr
     ret =
       system(("ypspur-coordinator -p " + param_file_ + "-d" + serial_port_ + spur_args_).c_str());
   }
-  if (ret == -1 && Spur_init() < 0) {
+  if (ret == -1 || Spur_init() < 0 || YP_get_error_state() == 0) {
     RCLCPP_WARN(this->get_logger(), "Can't open ypspur");
     return CallbackReturn::FAILURE;
   }
