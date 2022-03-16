@@ -1,6 +1,8 @@
 import os
 import sys
 
+from ament_index_python.packages import get_package_share_directory
+
 import launch_ros.actions
 import launch_ros.events
 import launch_ros.events.lifecycle
@@ -9,11 +11,21 @@ import lifecycle_msgs.msg
 import launch
 import launch.actions
 import launch.events
+from launch.substitutions import LaunchConfiguration
+from launch.actions import DeclareLaunchArgument
 
 
 def generate_launch_description():
     """Run lifecycle nodes via launch."""
     ld = launch.LaunchDescription()
+
+    params_file = LaunchConfiguration('params_file')
+
+    root_dir = get_package_share_directory('ypspur_ros2_bridge')
+    declare_params_file_cmd = DeclareLaunchArgument(
+        'params_file',
+        default_value=os.path.join(root_dir, 'config/tsukutsuku', 'ypspur_ros2_bridge_params.yaml'),
+        description='Params file for ypspur ros2 bridge')
 
     ypspur_ros2_bridge_node = launch_ros.actions.LifecycleNode(
         name="ypspur_ros2_bridge",
@@ -21,6 +33,7 @@ def generate_launch_description():
         package="ypspur_ros2_bridge",
         executable="ypspur_ros2_bridge",
         output="screen",
+        parameters=[params_file]
     )
 
     configure_trans_event = launch.actions.EmitEvent(
@@ -82,8 +95,9 @@ def generate_launch_description():
 
     # Add the actions to the launch description.
     # The order they are added reflects the order in which they will be executed.
-    ld.add_action(inactive_state_handler)
+    ld.add_action(declare_params_file_cmd)
     ld.add_action(active_state_handler)
+    ld.add_action(inactive_state_handler)
     ld.add_action(unconfigured_state_handler)
     ld.add_action(ypspur_ros2_bridge_node)
     ld.add_action(configure_trans_event)

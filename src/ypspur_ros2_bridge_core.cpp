@@ -3,12 +3,13 @@
 YpspurROS2Bridge::YpspurROS2Bridge()
 : rclcpp_lifecycle::LifecycleNode("ypspur_ros2_bridge"), tf2_broadcaster_(*this)
 {
+ declareParams(); 
 }
 
-void YpspurROS2Bridge::getParams()
+void YpspurROS2Bridge::declareParams()
 {
-  serial_port_ = this->declare_parameter<std::string>("serial_port_", "serial_port_");
-  param_file_ = this->declare_parameter<std::string>("param_file", "param_file");
+  serial_port_ = this->declare_parameter<std::string>("serial_port", "/dev/serial/by-id/usb-T-frog_project_T-frog_Driver-if00");
+  param_file_ = this->declare_parameter<std::string>("spur_params_file", "spur_params_file");
   spur_args_ = this->declare_parameter<std::string>("spur_args", "spur_args");
   left_wheel_joint_ = this->declare_parameter<std::string>("left_wheel_joint", "left_wheel_joint");
   right_wheel_joint_ =
@@ -22,15 +23,41 @@ void YpspurROS2Bridge::getParams()
   pub_hz_ = this->declare_parameter<double>("pub_hz_", 25.0);
 }
 
+void YpspurROS2Bridge::getParams()
+{
+  this->get_parameter("serial_port", serial_port_);
+  this->get_parameter("spur_params_file", param_file_);
+  this->get_parameter("spur_args", spur_args_);
+  this->get_parameter("left_wheel_joint", left_wheel_joint_);
+  this->get_parameter("right_wheel_joint", right_wheel_joint_);
+  this->get_parameter("frame_id", frame_id_);
+  this->get_parameter("child_frame_id", child_frame_id_);
+  this->get_parameter("linear_vel_max", linear_vel_max_);
+  this->get_parameter("angular_vel_max", angular_vel_max_);
+  this->get_parameter("linear_acc_max", linear_acc_max_);
+  this->get_parameter("angular_acc_max", angular_acc_max_);
+  this->get_parameter("pub_hz_", pub_hz_);
+}
+
 CallbackReturn YpspurROS2Bridge::on_configure(const rclcpp_lifecycle::State & previous_state)
 {
+  getParams();
   auto ret = system(nullptr);
   if (ret != 0) {
     ret =
-      system(("ypspur-coordinator -p " + param_file_ + "-d" + serial_port_ + spur_args_).c_str());
+      system(("ypspur-coordinator -p " + param_file_ + " " + "-d " + serial_port_  + " " + spur_args_ + " &").c_str());
+    rclcpp::sleep_for(std::chrono::milliseconds(1000));
+    RCLCPP_INFO_STREAM(get_logger(), "param file = " << param_file_);
+    RCLCPP_INFO_STREAM(get_logger(), "serial port = " << serial_port_);
+    RCLCPP_INFO_STREAM(get_logger(), "spur args = " << spur_args_);
   }
-  if (ret == -1 || Spur_init() < 0 || YP_get_error_state() == 0) {
+  if (ret == -1 || Spur_init() < 0 || YP_get_error_state() != 0) {
+    RCLCPP_WARN_STREAM(get_logger(), "ret = " << ret);
+    RCLCPP_WARN_STREAM(get_logger(), "Spur_init() = " << Spur_init());
+    RCLCPP_WARN_STREAM(get_logger(), "YP_get_error_state() = " << YP_get_error_state());
+
     RCLCPP_WARN(this->get_logger(), "Can't open ypspur");
+    system(("ps aux | grep ypspur-coordinator | grep -v grep | awk \'{ print \"kill -9\", $2 }\' | sh"));
     return CallbackReturn::FAILURE;
   }
 
@@ -52,8 +79,9 @@ CallbackReturn YpspurROS2Bridge::on_configure(const rclcpp_lifecycle::State & pr
     this->get_node_base_interface()->get_context());
   this->get_node_timers_interface()->add_timer(timer_control_, nullptr);
 
+  //cmd_vel topic name is on global name space 
   cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
-    "cmd_vel", 1, std::bind(&YpspurROS2Bridge::CmdVelCallback, this, std::placeholders::_1));
+    "/cmd_vel", 1, std::bind(&YpspurROS2Bridge::CmdVelCallback, this, std::placeholders::_1));
   odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::QoS{10});
   twist_pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>("twist", rclcpp::QoS{10});
   pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("pose", rclcpp::QoS{10});
@@ -86,6 +114,10 @@ CallbackReturn YpspurROS2Bridge::on_shutdown(const rclcpp_lifecycle::State & pre
 CallbackReturn YpspurROS2Bridge::on_activate(const rclcpp_lifecycle::State & previous_state)
 {
   if (YP_get_error_state() == 0) {
+    odom_pub_->on_activate();
+    twist_pub_->on_activate();
+    pose_pub_->on_activate();
+    js_pub_->on_activate();
     return CallbackReturn::SUCCESS;
   } else {
     RCLCPP_WARN(get_logger(), "Ypspur got some error states");
