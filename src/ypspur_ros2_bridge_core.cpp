@@ -87,6 +87,7 @@ CallbackReturn YpspurROS2Bridge::on_configure(const rclcpp_lifecycle::State & pr
   pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("pose", rclcpp::QoS{10});
   js_pub_ = this->create_publisher<sensor_msgs::msg::JointState>("joint_states", rclcpp::QoS{10});
   odom_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
+  vy_ = y_ = 0;
 
   return CallbackReturn::SUCCESS;
 }

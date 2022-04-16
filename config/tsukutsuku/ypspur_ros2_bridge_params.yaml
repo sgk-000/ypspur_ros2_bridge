@@ -3,7 +3,7 @@ ypspur_ros2_bridge:
     use_sim_time: False
     serial_port: "/dev/serial/by-id/usb-T-frog_project_T-frog_Driver-if00"
     spur_params_file: "/home/tsukutsuku/tsukutsuku_ws/src/roboken/yp_robot_config/ypspur-robot-params/tsukutsuku.param"
-    spur_args: "--verbose --admask 10000000 --enable-get-digital-io"
+    spur_args: "--admask 10000000 --enable-get-digital-io"
     frame_id: "odom"
     child_frame_id: "base_link"
     left_wheel_joint: "left_wheel_joint"
