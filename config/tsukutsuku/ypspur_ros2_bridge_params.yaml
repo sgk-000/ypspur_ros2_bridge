@@ -1,4 +1,4 @@
-ypspur_ros2_bridge:
+/**:
   ros__parameters:
     use_sim_time: False
     serial_port: "/dev/serial/by-id/usb-T-frog_project_T-frog_Driver-if00"
@@ -12,4 +12,4 @@ ypspur_ros2_bridge:
     linear_acc_max: 1.0 #[m/s]
     angular_vel_max: 3.14 #[rad/s]
     angular_acc_max: 3.14 #[rad/s]
-    pub_hz_: 25.0
+    pub_hz_: 50.0
