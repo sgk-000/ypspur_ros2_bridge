@@ -142,6 +142,7 @@ void YpspurROS2Bridge::timerCallback()
   double x, y, th;
   double vx, vy, vth;
   double l_ang, r_ang;
+  vy = 0;
 
   Spur_get_pos_GL(&x, &y, &th);
   Spur_get_vel(&vx, &vth);
