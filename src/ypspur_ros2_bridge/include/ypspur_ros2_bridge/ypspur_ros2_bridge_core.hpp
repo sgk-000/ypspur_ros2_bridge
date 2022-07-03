@@ -1,9 +1,6 @@
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
-#include "tf2_ros/buffer.h"
-#include "tf2_ros/transform_broadcaster.h"
-#include "tf2_ros/transform_listener.h"
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -64,9 +61,5 @@ private:
   rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::TwistStamped>::SharedPtr twist_pub_;
   rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
   rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::JointState>::SharedPtr js_pub_;
-  std::shared_ptr<tf2_ros::TransformBroadcaster> odom_broadcaster_;
-  rclcpp::Time current_time_;
   rclcpp::TimerBase::SharedPtr timer_control_;
-
-  tf2_ros::TransformBroadcaster tf2_broadcaster_;
 };

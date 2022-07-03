@@ -1,7 +1,7 @@
 #include "ypspur_ros2_bridge/ypspur_ros2_bridge_core.hpp"
 
 YpspurROS2Bridge::YpspurROS2Bridge()
-: rclcpp_lifecycle::LifecycleNode("ypspur_ros2_bridge"), tf2_broadcaster_(*this)
+: rclcpp_lifecycle::LifecycleNode("ypspur_ros2_bridge")
 {
  declareParams(); 
 }
@@ -87,7 +87,6 @@ CallbackReturn YpspurROS2Bridge::on_configure(const rclcpp_lifecycle::State & pr
   twist_pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>("twist", rclcpp::QoS{10});
   pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("pose", rclcpp::QoS{10});
   js_pub_ = this->create_publisher<sensor_msgs::msg::JointState>("joint_states", rclcpp::QoS{10});
-  odom_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
   return CallbackReturn::SUCCESS;
 }
@@ -159,8 +158,6 @@ void YpspurROS2Bridge::timerCallback()
   odom_trans.transform.translation.y = y;
   odom_trans.transform.translation.z = 0.0;
   odom_trans.transform.rotation = odom_quat;
-
-  tf2_broadcaster_.sendTransform(odom_trans);
 
   odom.header.stamp = ros_clock.now();
   odom.header.frame_id = frame_id_;
