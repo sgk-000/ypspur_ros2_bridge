@@ -50,17 +50,6 @@ private:
   double linear_acc_max_;
   double angular_acc_max_;
 
-  double x_;
-  double y_;
-  double th_;
-
-  double vx_;
-  double vy_;
-  double vth_;
-
-  double l_ang_;
-  double r_ang_;
-
   double pub_hz_;
   sensor_msgs::msg::JointState js_;
 
